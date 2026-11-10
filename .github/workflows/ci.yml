@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 只读取仓库内容，遵循最小权限原则
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------
+  # Job 1：单元 / 接口测试（Vitest）
+  # ---------------------------------------------------------------
+  unit:
+    name: 单元测试（Vitest）
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 24 并启用 npm 缓存
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: 安装依赖
+        run: npm install
+
+      - name: 运行单元测试与接口测试
+        run: npm test
+
+  # ---------------------------------------------------------------
+  # Job 2：端到端测试（Playwright）
+  # ---------------------------------------------------------------
+  e2e:
+    name: 端到端测试（Playwright / chromium）
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Node.js 24 并启用 npm 缓存
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: 安装依赖
+        run: npm install
+
+      - name: 安装 Playwright 浏览器与系统依赖
+        run: npx playwright install --with-deps chromium
+
+      - name: 运行端到端测试
+        run: npm run test:e2e

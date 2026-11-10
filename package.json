@@ -1,0 +1,21 @@
+{
+  "name": "aiqa",
+  "version": "1.0.0",
+  "description": "实验7-1 AI答疑助手（零运行时依赖，Node.js原生http）",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "vitest run",
+    "test:api": "vitest run tests/ask.integration.test.js",
+    "test:e2e":"playwright test"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "supertest": "^7.3.2",
+    "vitest": "^5.1.0"
+  }
+}
