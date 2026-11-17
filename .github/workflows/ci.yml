@@ -62,3 +62,88 @@ jobs:
 
       - name: 运行端到端测试
         run: npm run test:e2e
+
+  # ---------------------------------------------------------------
+  # Job 3：构建镜像并在容器内做冒烟测试
+  # ---------------------------------------------------------------
+  docker:
+    name: 构建镜像（Docker）
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 BuildKit
+        uses: docker/setup-buildx-action@v3
+
+      - name: 构建镜像
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: aiqa:ci
+
+      - name: 记录镜像体积
+        run: |
+          SIZE=$(docker image inspect aiqa:ci --format '{{.Size}}')
+          echo "### 镜像信息" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Tag | 解压后大小 |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| aiqa:ci | $(numfmt --to=iec "$SIZE")（$SIZE bytes） |" >> "$GITHUB_STEP_SUMMARY"
+          docker images aiqa:ci
+
+      - name: 容器冒烟测试
+        run: |
+          # 镜像配置检查：非 root 运行、仅声明 3000 端口
+          test "$(docker inspect -f '{{.Config.User}}' aiqa:ci)" = "node"
+          docker inspect -f '{{json .Config.ExposedPorts}}' aiqa:ci
+
+          docker run -d --name aiqa-ci -p 3000:3000 aiqa:ci
+
+          # 等待服务就绪，最多 20 秒
+          for i in $(seq 1 20); do
+            curl -fsS http://localhost:3000/api/history > /tmp/history.json && break
+            sleep 1
+          done
+          docker logs aiqa-ci
+
+          # 静态页可访问
+          curl -fsS http://localhost:3000/ -o /dev/null
+
+          # 写入 data/ 目录：验证 node 用户对 /app/data 有写权限
+          curl -fsS -X POST http://localhost:3000/api/ask \
+            -H 'Content-Type: application/json' \
+            -d '{"question":"CI 冒烟测试"}' > /tmp/ask.json
+
+          cat /tmp/history.json
+          cat /tmp/ask.json
+
+      - name: 准备截图环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 安装依赖与 Chromium
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: 截图容器内提问成功界面
+        run: node scripts/capture-ask.js
+
+      - name: 上传截图
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ask-success-screenshot
+          path: artifacts/ask-success.png
+          if-no-files-found: warn
+
+      - name: 停止容器
+        if: always()
+        run: docker rm -f aiqa-ci || true

@@ -1,1 +1,19 @@
-﻿[]
+[
+  {
+    "id": "mwan6e0u-99qfab",
+    "question": "什么是 Spec 驱动开发？",
+    "answer": "问题：什么是 Spec 驱动开发？\n\n模拟回答：在工程实践中，这类问题通常需要结合上下文具体分析。当前为演示模式，回答仅供参考。",
+    "sources": [
+      {
+        "title": "AIQA 演示知识库",
+        "url": "https://example.com/demo-kb"
+      },
+      {
+        "title": "Node.js 官方文档",
+        "url": "https://nodejs.org/docs"
+      }
+    ],
+    "mode": "demo",
+    "createdAt": "2026-11-10T12:03:55.902Z"
+  }
+]
